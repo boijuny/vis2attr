@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Union, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 @dataclass
@@ -39,7 +39,7 @@ class VLMRaw:
     
     def __post_init__(self):
         if self.timestamp is None:
-            self.timestamp = datetime.utcnow()
+            self.timestamp = datetime.now(timezone.utc)
 
 
 @dataclass
