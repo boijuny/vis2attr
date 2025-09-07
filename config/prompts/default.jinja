@@ -1,0 +1,38 @@
+# Default prompt template for VLM attribute extraction
+# Uses Jinja2 templating for dynamic schema-based prompts
+
+You are an expert at analyzing product images and extracting structured attributes. 
+
+## Task
+Analyze the provided image(s) and extract the following attributes in JSON format:
+
+{% for field_name, field_config in schema.fields.items() %}
+- **{{ field_name }}**: {{ field_config.description }}
+  - Type: {{ field_config.type }}
+  - Required: {{ field_config.required }}
+  {% if field_config.enum %}
+  - Valid values: {{ field_config.enum | join(', ') }}
+  {% endif %}
+{% endfor %}
+
+## Instructions
+1. Look carefully at the image(s) provided
+2. Extract the requested attributes based on what you can observe
+3. For each attribute, provide:
+   - `value`: The extracted value (null if not visible/unknown)
+   - `confidence`: Your confidence level (0.0 to 1.0) in the extraction
+4. For array fields, provide a list of objects with `name` and `confidence`
+5. Be conservative - if you're not sure, use null and low confidence
+6. Return ONLY valid JSON, no additional text
+
+## Output Format
+```json
+{
+  {% for field_name, field_config in schema.fields.items() %}
+  "{{ field_name }}": {% if field_config.type == "array" %}[{"name": "", "confidence": 0.0}]{% elif field_config.type == "string" %}{"value": null, "confidence": 0.0}{% else %}{"value": null, "confidence": 0.0}{% endif %}{% if not loop.last %},{% endif %}
+  {% endfor %}
+}
+```
+
+## Image Analysis
+Please analyze the following image(s):

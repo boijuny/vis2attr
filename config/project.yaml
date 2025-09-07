@@ -1,0 +1,57 @@
+# vis2attr Project Configuration
+# Single source of truth for all pipeline settings
+
+# Ingestor configuration
+ingestor: ingest.fs  # Options: ingest.fs | ingest.urls | ingest.api
+
+# Provider configuration
+provider: providers.openai  # Options: providers.openai | providers.google | providers.anthropic
+
+# Storage configuration
+storage: storage.files  # Options: storage.files | storage.s3
+
+# Schema and prompt configuration
+schema_path: config/schemas/default.yaml
+prompt_template: config/prompts/default.jinja
+
+# Decision thresholds
+thresholds:
+  default: 0.75
+  brand: 0.80
+  model_or_type: 0.70
+  primary_colors: 0.65
+  materials: 0.70
+  condition: 0.75
+
+# I/O configuration
+io:
+  max_images_per_item: 3
+  max_resolution: 768
+  supported_formats: [".jpg", ".jpeg", ".png", ".webp"]
+
+# Provider-specific settings
+providers:
+  openai:
+    model: "gpt-4-vision-preview"
+    max_tokens: 1000
+    temperature: 0.1
+  google:
+    model: "gemini-pro-vision"
+    max_tokens: 1000
+    temperature: 0.1
+  anthropic:
+    model: "claude-3-vision"
+    max_tokens: 1000
+    temperature: 0.1
+
+# Metrics and logging
+metrics:
+  enable_metrics: true
+  log_level: "INFO"
+  structured_logging: true
+
+# Security settings
+security:
+  strip_exif: true
+  avoid_pii: true
+  temp_file_cleanup: true

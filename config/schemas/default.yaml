@@ -1,0 +1,63 @@
+# Default schema for item attributes
+# This defines the structure of attributes that will be extracted
+
+schema:
+  name: "default"
+  version: "1.0.0"
+  description: "Default schema for general item attribute extraction"
+
+fields:
+  brand:
+    type: "string"
+    required: false
+    description: "Brand or manufacturer name"
+    confidence_threshold: 0.80
+    
+  model_or_type:
+    type: "string"
+    required: false
+    description: "Model name, type, or product identifier"
+    confidence_threshold: 0.70
+    
+  primary_colors:
+    type: "array"
+    required: false
+    description: "List of primary colors detected"
+    item_type: "object"
+    item_schema:
+      name:
+        type: "string"
+        description: "Color name"
+      hex:
+        type: "string"
+        description: "Hex color code"
+        pattern: "^#[0-9A-Fa-f]{6}$"
+    confidence_threshold: 0.65
+    
+  materials:
+    type: "array"
+    required: false
+    description: "List of materials detected"
+    item_type: "object"
+    item_schema:
+      name:
+        type: "string"
+        description: "Material name"
+      confidence:
+        type: "number"
+        minimum: 0.0
+        maximum: 1.0
+    confidence_threshold: 0.70
+    
+  condition:
+    type: "string"
+    required: false
+    description: "Item condition assessment"
+    enum: ["new", "like_new", "good", "fair", "poor", "unknown"]
+    confidence_threshold: 0.75
+    
+  notes:
+    type: "string"
+    required: false
+    description: "Additional observations or notes"
+    confidence_threshold: 0.0  # No confidence threshold for notes
