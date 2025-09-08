@@ -1,116 +1,97 @@
 # vis2attr
 
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 **Visual Language Model for Attribute Extraction**
 
 Turn item photos into structured attributes (brand, colors, materials, condition) using Visual Language Models. Output strict JSON with per-field confidence scores.
 
-## Current Status: MVP Implementation
+## 🚀 Quick Start
 
-This project is currently in **MVP development phase** with core infrastructure implemented and ready for pipeline integration.
+```bash
+# Install
+uv venv && source .venv/bin/activate
+uv pip install -e .
 
-### ✅ Implemented Features
+# Set up API key
+export MISTRAL_API_KEY=your_api_key_here
 
-- **Core Data Models**: Complete schema definitions for Item, VLMRequest, VLMRaw, Attributes, and Decision
-- **Configuration System**: YAML-based configuration with schema validation
-- **CLI Interface**: `analyze` and `report` commands (framework ready)
-- **File System Ingestor**: Image loading, processing, and validation with EXIF stripping
-- **Mistral AI Provider**: Full implementation with vision model support
-- **JSON Parser**: Structured response parsing with confidence extraction
-- **File Storage Backend**: Local storage with organized directory structure
-- **Factory Patterns**: Pluggable architecture for providers, parsers, and storage
-- **Schema System**: YAML-based attribute schemas with Jinja2 prompt templates
-- **Comprehensive Testing**: Full test suite covering all implemented components
+# Run analysis
+vis2attr analyze --input ./images --output ./predictions.parquet
+```
 
-### 🚧 In Development
+## 📊 Status
 
-- **Pipeline Integration**: Connecting all components into working pipeline
-- **Additional Providers**: OpenAI, Google, Anthropic (Mistral currently implemented)
-- **Decision Rules Engine**: Quality thresholds and acceptance logic
-- **Metrics & Logging**: Observability and performance tracking
-- **Report Generation**: Analysis and quality reporting functionality
+**Core infrastructure complete** with working pipeline. Ready for production improvements.
 
-### 📋 Planned Features
+| Status | Component | Description |
+|--------|-----------|-------------|
+| ✅ | **Core Pipeline** | Complete data models, configuration, Mistral provider, JSON parser |
+| ✅ | **File Processing** | Image ingestor with EXIF stripping, comprehensive test suite |
+| 🚧 | **CLI Interface** | Basic commands need UX improvements and error handling |
+| 🚧 | **Storage System** | File-based storage needs query interface and better organization |
+| 🚧 | **Decision Rules** | Simple thresholds only, needs sophisticated quality gates |
+| ❌ | **Report Generation** | Placeholder only, needs full implementation |
+| ❌ | **Metrics & Logging** | No observability or performance tracking |
+| ❌ | **Additional Providers** | Only Mistral (need OpenAI, Google, Anthropic) |
 
-- **URL/API Ingestors**: Remote image loading
-- **Advanced Parsers**: Support for different response formats
-- **Web API**: RESTful interface for production use
-
-## Architecture Overview
+## 🏗️ Architecture
 
 ```mermaid
 flowchart LR
-  A[File Ingestor] --> B[Prompt Builder]
-  B --> C[Mistral Provider]
-  C --> D[JSON Parser]
-  D --> E[Decision Rules]
-  E --> F[File Storage]
-  A --> G[Metrics & Logging]
+  A[📁 File Ingestor] --> B[📝 Prompt Builder]
+  B --> C[🤖 Mistral Provider]
+  C --> D[📊 JSON Parser]
+  D --> E[⚖️ Decision Rules]
+  E --> F[💾 File Storage]
+  A --> G[📈 Metrics & Logging]
   C --> G
   D --> G
   E --> G
 ```
 
-### Component Status
 
-| Component | Status | Implementation |
-|-----------|--------|----------------|
-| **File Ingestor** | ✅ Complete | Image loading, processing, EXIF stripping |
-| **Prompt Builder** | ✅ Complete | Jinja2 templates with schema integration |
-| **Mistral Provider** | ✅ Complete | Full VLM integration with cost tracking |
-| **JSON Parser** | ✅ Complete | Structured response parsing |
-| **Decision Rules** | 🚧 Planned | Quality thresholds and acceptance logic |
-| **File Storage** | ✅ Complete | Organized local storage with lineage |
-| **Metrics & Logging** | 🚧 Planned | Performance and cost tracking |
+## 📊 Data Models
 
-## Data Models
+Well-defined data contracts for type safety and consistency:
 
-The system uses well-defined data contracts for type safety and consistency:
+```python
+# Core data structures
+Item = {
+    item_id: str,
+    images: List[bytes], 
+    meta: Dict[str, Any]
+}
 
-* **Item**: `{ item_id: str, images: List[bytes], meta: Dict[str, Any] }`
-* **VLMRequest**: `{ model: str, messages: List[Dict], images: List[bytes], max_tokens: int, temperature: float }`
-* **VLMRaw**: `{ content: str, usage: Dict[str, Any], latency_ms: float, provider: str, model: str, timestamp: datetime }`
-* **Attributes**: `{ data: Dict[str, Any], confidences: Dict[str, float], tags: Set[str], notes: str, lineage: Dict[str, Any] }`
-* **Decision**: `{ accepted: bool, field_flags: Dict[str, str], reasons: List[str], confidence_score: float }`
+Attributes = {
+    data: Dict[str, Any],           # Schema-driven attributes
+    confidences: Dict[str, float],  # Per-field confidence scores
+    tags: Set[str],                 # Classification tags
+    notes: str,                     # Additional notes
+    lineage: Dict[str, Any]         # Processing metadata
+}
 
-> `Attributes.data` is a dict to support any custom schema loaded at runtime.
-
-## Default Schema
-
-The system uses a YAML-based schema definition:
-
-```yaml
-brand:
-  value: null
-  confidence: 0.0
-
-model_or_type:
-  value: null
-  confidence: 0.0
-
-primary_colors:
-  - name: ""
-    confidence: 0.0
-
-materials:
-  - name: ""
-    confidence: 0.0
-
-condition:
-  value: null
-  confidence: 0.0
-
-notes: ""
+Decision = {
+    accepted: bool,                 # Overall acceptance
+    field_flags: Dict[str, str],    # Per-field status
+    reasons: List[str],             # Rejection reasons
+    confidence_score: float         # Overall confidence
+}
 ```
 
-## Configuration
+> `Attributes.data` supports any custom schema loaded at runtime.
 
-The system uses a single YAML configuration file (`config/project.yaml`):
+## ⚙️ Configuration
+
+YAML-based schema definition and project configuration:
 
 ```yaml
 # Pipeline components
-ingestor: ingest.fs  # File system ingestor
-provider: providers.mistral  # Mistral AI provider
-storage: storage.files  # Local file storage
+ingestor: ingest.fs
+provider: providers.mistral
+storage: storage.files
 
 # Schema and prompts
 schema_path: config/schemas/default.yaml
@@ -139,51 +120,61 @@ providers:
     temperature: 0.1
 ```
 
-## Installation & Setup
+### Default Schema
+```yaml
+brand:
+  value: null
+  confidence: 0.0
 
-```bash
-# Clone and install
-git clone <repository>
-cd vis2attr
-uv venv && source .venv/bin/activate
-uv pip install -e .
+model_or_type:
+  value: null
+  confidence: 0.0
 
-# Set up API key
-export MISTRAL_API_KEY=your_api_key_here
+primary_colors:
+  - name: ""
+    confidence: 0.0
 
-# Run analysis (when pipeline is complete)
-vis2attr analyze --input ./images --config config/project.yaml --output ./predictions.parquet
-vis2attr report --predictions ./predictions.parquet
+materials:
+  - name: ""
+    confidence: 0.0
+
+condition:
+  value: null
+  confidence: 0.0
+
+notes: ""
 ```
 
-## Project Structure
+
+## 📁 Project Structure
 
 ```
 vis2attr/
-├── config/
-│   ├── project.yaml          # Main configuration
-│   ├── schemas/default.yaml  # Attribute schema
-│   └── prompts/default.jinja # Prompt template
-├── src/vis2attr/
-│   ├── core/                 # Data models and config
-│   ├── cli/                  # Command-line interface
-│   ├── ingest/               # Image loading (fs.py)
-│   ├── providers/            # VLM providers (mistral.py)
-│   ├── parse/                # Response parsing (json_parser.py)
-│   ├── storage/              # Data persistence (files.py)
-│   └── prompt/               # Template system
-├── tests/                    # Comprehensive test suite
-└── storage/                  # Local data storage
+├── config/                   # Configuration files
+├── src/vis2attr/            # Source code
+│   ├── core/                # Data models and config
+│   ├── cli/                 # Command-line interface
+│   ├── ingest/              # Image loading
+│   ├── providers/           # VLM providers
+│   ├── parse/               # Response parsing
+│   ├── storage/             # Data persistence
+│   └── prompt/              # Template system
+├── tests/                   # Test suite
+└── storage/                 # Local data storage
 ```
-
-## Development Status
-
-This project is in active development. The core infrastructure is complete and ready for pipeline integration. The next major milestone is connecting all components into a working end-to-end pipeline.
-
-### Key Design Principles
+## 🎯 Design Principles
 
 - **Schema-first & config-driven**: No hard-coded fields
 - **Ports & adapters**: Swappable implementations via factory patterns
-- **Stateless modules**: Side-effects isolated in storage
 - **Type safety**: Comprehensive data models with validation
 - **Testability**: Full test coverage for all components
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
