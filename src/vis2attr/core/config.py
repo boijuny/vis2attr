@@ -34,6 +34,9 @@ class Config:
     # Security settings
     security: Dict[str, Any]
     
+    # Storage settings
+    storage_config: Optional[Dict[str, Any]] = None
+    
     @classmethod
     def from_file(cls, config_path: str) -> "Config":
         """Load configuration from a YAML file."""
@@ -54,3 +57,7 @@ class Config:
     def get_threshold(self, field_name: str) -> float:
         """Get confidence threshold for a specific field."""
         return self.thresholds.get(field_name, self.thresholds.get('default', 0.75))
+    
+    def get_storage_config(self) -> Dict[str, Any]:
+        """Get storage configuration."""
+        return self.storage_config or {}

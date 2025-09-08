@@ -1,7 +1,12 @@
 """Storage backends for outputs and lineage."""
 
-# TODO: Implement storage modules
-# from .files import FileStorage
-# from .s3 import S3Storage
+from .base import StorageBackend, StorageError
+from .files import FileStorage
+from .factory import StorageFactory
 
-__all__ = []
+__all__ = [
+    'StorageBackend',
+    'StorageError', 
+    'FileStorage',
+    'StorageFactory'
+]

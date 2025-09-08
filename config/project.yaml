@@ -10,6 +10,12 @@ provider: providers.openai  # Options: providers.openai | providers.google | pro
 # Storage configuration
 storage: storage.files  # Options: storage.files | storage.s3
 
+# Storage-specific settings
+storage_config:
+  storage_root: "./storage"
+  create_dirs: true
+  backup_enabled: false
+
 # Schema and prompt configuration
 schema_path: config/schemas/default.yaml
 prompt_template: config/prompts/default.jinja
