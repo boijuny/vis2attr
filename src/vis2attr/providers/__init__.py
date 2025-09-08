@@ -18,6 +18,9 @@ from .mistral import MistralProvider
 # from .google import GoogleProvider
 # from .anthropic import AnthropicProvider
 
+# Register providers with the factory
+ProviderFactory.register_provider("mistral", MistralProvider)
+
 __all__ = [
     "Provider",
     "ProviderError",
