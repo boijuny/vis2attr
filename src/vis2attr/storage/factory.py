@@ -79,3 +79,17 @@ class StorageFactory:
             'docstring': backend_class.__doc__,
             'config_schema': getattr(backend_class, 'config_schema', None)
         }
+
+
+# Convenience function for creating storage backends
+def create_storage_backend(backend_type: str, config: Optional[Dict[str, Any]] = None) -> StorageBackend:
+    """Create a storage backend instance using the factory.
+    
+    Args:
+        backend_type: Type of storage backend ('files', 'file', 'local')
+        config: Backend-specific configuration
+        
+    Returns:
+        StorageBackend: Configured storage backend instance
+    """
+    return StorageFactory.create_backend(backend_type, config)
