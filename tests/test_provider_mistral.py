@@ -12,22 +12,21 @@ class TestMistralProvider:
     def test_mistral_provider_validation(self):
         """Test Mistral provider configuration validation."""
         # Valid config
-        config = {"api_key": "test_key", "model": "pixtral-12b-latest"}
+        config = {"model": "pixtral-12b-latest"}
         provider = MistralProvider(config)
-        assert provider.config["api_key"] == "test_key"
         assert provider.config["model"] == "pixtral-12b-latest"
         
-        # Invalid config - missing api_key
-        with pytest.raises(ProviderConfigError):
-            MistralProvider({})
+        # Test default model
+        provider_default = MistralProvider({})
+        assert provider_default.config["model"] == "pixtral-12b-latest"
         
         # Invalid config - unsupported model
         with pytest.raises(ProviderConfigError):
-            MistralProvider({"api_key": "test_key", "model": "unsupported-model"})
+            MistralProvider({"model": "unsupported-model"})
     
     def test_mistral_provider_defaults(self):
         """Test Mistral provider default configuration."""
-        config = {"api_key": "test_key"}
+        config = {}
         provider = MistralProvider(config)
         
         assert provider.provider_name == "mistral"
@@ -37,7 +36,7 @@ class TestMistralProvider:
     
     def test_mistral_provider_available_models(self):
         """Test getting available models."""
-        config = {"api_key": "test_key"}
+        config = {}
         provider = MistralProvider(config)
         
         models = provider.get_available_models()
@@ -53,7 +52,7 @@ class TestMistralProvider:
     
     def test_mistral_provider_estimate_cost(self):
         """Test cost estimation."""
-        config = {"api_key": "test_key", "model": "pixtral-12b-latest"}
+        config = {"model": "pixtral-12b-latest"}
         provider = MistralProvider(config)
         
         request = VLMRequest(
@@ -68,6 +67,7 @@ class TestMistralProvider:
         assert isinstance(cost, float)
     
     @patch('src.vis2attr.providers.mistral.Mistral')
+    @patch.dict('os.environ', {'MISTRAL_API_KEY': 'test_api_key'})
     def test_mistral_provider_predict_success(self, mock_mistral_class):
         """Test successful prediction."""
         # Mock the Mistral client and response
@@ -84,7 +84,7 @@ class TestMistralProvider:
         mock_client.chat.complete.return_value = mock_response
         
         # Create provider and request
-        config = {"api_key": "test_key", "model": "pixtral-12b-latest"}
+        config = {"model": "pixtral-12b-latest"}
         provider = MistralProvider(config)
         
         request = VLMRequest(
@@ -121,7 +121,7 @@ class TestMistralProvider:
         mock_mistral_class.return_value = mock_client
         mock_client.chat.complete.side_effect = Exception("API Error")
         
-        config = {"api_key": "test_key", "model": "pixtral-12b-latest"}
+        config = {"model": "pixtral-12b-latest"}
         provider = MistralProvider(config)
         
         request = VLMRequest(
@@ -136,7 +136,7 @@ class TestMistralProvider:
     
     def test_convert_messages_with_bytes(self):
         """Test message conversion with byte images."""
-        config = {"api_key": "test_key"}
+        config = {}
         provider = MistralProvider(config)
         
         messages = [{"role": "user", "content": "What's in this image?"}]
@@ -153,7 +153,7 @@ class TestMistralProvider:
     
     def test_convert_messages_with_urls(self):
         """Test message conversion with URL images."""
-        config = {"api_key": "test_key"}
+        config = {}
         provider = MistralProvider(config)
         
         messages = [{"role": "user", "content": "What's in this image?"}]

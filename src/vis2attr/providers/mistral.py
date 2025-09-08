@@ -1,8 +1,11 @@
 """Mistral AI provider implementation for vision capabilities."""
 
 import base64
+import os
 import time
+from pathlib import Path
 from typing import Dict, Any, List, Union
+from dotenv import load_dotenv
 from mistralai import Mistral
 from .base import Provider, ProviderAPIError, ProviderConfigError, ProviderRateLimitError, ProviderTimeoutError
 from ..core.schemas import VLMRequest, VLMRaw
@@ -20,11 +23,6 @@ class MistralProvider(Provider):
     
     def _validate_config(self) -> None:
         """Validate Mistral provider configuration."""
-        required_keys = ["api_key"]
-        for key in required_keys:
-            if key not in self.config:
-                raise ProviderConfigError(f"Missing required config key: {key}")
-        
         # Set default model if not provided
         if "model" not in self.config:
             self.config["model"] = "pixtral-12b-latest"
@@ -52,8 +50,18 @@ class MistralProvider(Provider):
             ProviderTimeoutError: If request times out
         """
         try:
+            # Load .env file from project root
+            project_root = Path(__file__).parent.parent.parent.parent
+            env_file = project_root / ".env"
+            if env_file.exists():
+                load_dotenv(env_file)            
+            # Load API key from environment variable
+            api_key = os.getenv("MISTRAL_API_KEY")
+            if not api_key:
+                raise ProviderConfigError("MISTRAL_API_KEY environment variable not set")
+            
             # Initialize Mistral client
-            client = Mistral(api_key=self.config["api_key"])
+            client = Mistral(api_key=api_key)
             
             # Convert images to Mistral format
             mistral_messages = self._convert_messages(request.messages, request.images)
