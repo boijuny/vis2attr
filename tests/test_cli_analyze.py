@@ -173,9 +173,9 @@ class TestAnalyzeCommand:
     
     @patch('vis2attr.cli.analyze.PipelineService')
     @patch('vis2attr.cli.analyze.Config')
-    def test_analyze_command_success(self, mock_config_class, mock_pipeline_class, 
-                                   temp_config_file, temp_images_dir, sample_pipeline_results):
-        """Test successful analyze command execution."""
+    def test_analyze_command_success_directory(self, mock_config_class, mock_pipeline_class, 
+                                             temp_config_file, temp_images_dir, sample_pipeline_results):
+        """Test successful analyze command execution with directory (processes each file separately)."""
         # Setup mocks
         mock_config = Mock()
         mock_config_class.from_file.return_value = mock_config
@@ -184,7 +184,7 @@ class TestAnalyzeCommand:
         mock_pipeline.analyze_batch.return_value = sample_pipeline_results
         mock_pipeline_class.return_value = mock_pipeline
         
-        # Run command
+        # Run command with directory
         runner = CliRunner()
         result = runner.invoke(analyze_command, [
             "--input", str(temp_images_dir),
@@ -194,8 +194,46 @@ class TestAnalyzeCommand:
         
         # Verify success
         assert result.exit_code == 0
+        assert "Processing 1 files as separate items" in result.output
         assert "Analysis completed" in result.output
         assert "✅ Successful: 2" in result.output
+        assert "❌ Failed: 0" in result.output
+        assert "Results saved successfully!" in result.output
+        
+        # Verify pipeline was called correctly
+        mock_config_class.from_file.assert_called_once_with(temp_config_file)
+        mock_pipeline_class.assert_called_once_with(mock_config)
+        mock_pipeline.analyze_batch.assert_called_once()
+    
+    @patch('vis2attr.cli.analyze.PipelineService')
+    @patch('vis2attr.cli.analyze.Config')
+    def test_analyze_command_success_single_file(self, mock_config_class, mock_pipeline_class, 
+                                               temp_config_file, temp_images_dir, sample_pipeline_results):
+        """Test successful analyze command execution with single file."""
+        # Setup mocks
+        mock_config = Mock()
+        mock_config_class.from_file.return_value = mock_config
+        
+        mock_pipeline = Mock()
+        mock_pipeline.analyze_batch.return_value = sample_pipeline_results[:1]  # Only one result
+        mock_pipeline_class.return_value = mock_pipeline
+        
+        # Get a single image file
+        image_file = next(temp_images_dir.glob("*.jpg"))
+        
+        # Run command with single file
+        runner = CliRunner()
+        result = runner.invoke(analyze_command, [
+            "--input", str(image_file),
+            "--config", temp_config_file,
+            "--output", "test_output.parquet"
+        ])
+        
+        # Verify success
+        assert result.exit_code == 0
+        assert f"Processing single file: {image_file}" in result.output
+        assert "Analysis completed" in result.output
+        assert "✅ Successful: 1" in result.output
         assert "❌ Failed: 0" in result.output
         assert "Results saved successfully!" in result.output
         
@@ -238,12 +276,19 @@ class TestAnalyzeCommand:
     @patch('vis2attr.cli.analyze.Config')
     def test_analyze_command_batch_mode(self, mock_config_class, mock_pipeline_class, 
                                       temp_config_file, temp_images_dir, sample_pipeline_results):
-        """Test analyze command in batch mode."""
+        """Test analyze command in batch mode (processes each subdirectory separately)."""
         # Create subdirectories for batch processing
         subdir1 = temp_images_dir / "item1"
         subdir1.mkdir()
         subdir2 = temp_images_dir / "item2"
         subdir2.mkdir()
+        
+        # Add some files to subdirectories
+        from PIL import Image
+        img1 = Image.new('RGB', (50, 50), color='blue')
+        img1.save(subdir1 / "image1.jpg", format='JPEG')
+        img2 = Image.new('RGB', (50, 50), color='green')
+        img2.save(subdir2 / "image2.jpg", format='JPEG')
         
         # Setup mocks
         mock_config = Mock()
@@ -288,6 +333,56 @@ class TestAnalyzeCommand:
         # Verify failure
         assert result.exit_code == 1
         assert "❌ Pipeline error: Pipeline failed" in result.output
+    
+    @patch('vis2attr.cli.analyze.PipelineService')
+    @patch('vis2attr.cli.analyze.Config')
+    def test_analyze_command_empty_directory(self, mock_config_class, mock_pipeline_class, 
+                                           temp_config_file):
+        """Test analyze command with empty directory."""
+        # Create empty directory
+        empty_dir = tempfile.mkdtemp()
+        
+        # Setup mocks
+        mock_config = Mock()
+        mock_config_class.from_file.return_value = mock_config
+        
+        mock_pipeline = Mock()
+        mock_pipeline_class.return_value = mock_pipeline
+        
+        # Run command with empty directory
+        runner = CliRunner()
+        result = runner.invoke(analyze_command, [
+            "--input", empty_dir,
+            "--config", temp_config_file
+        ])
+        
+        # Verify failure
+        assert result.exit_code == 0  # Should exit gracefully
+        assert "No files found in directory" in result.output
+    
+    @patch('vis2attr.cli.analyze.PipelineService')
+    @patch('vis2attr.cli.analyze.Config')
+    def test_analyze_command_batch_mode_no_subdirs(self, mock_config_class, mock_pipeline_class, 
+                                                  temp_config_file, temp_images_dir):
+        """Test analyze command in batch mode with no subdirectories."""
+        # Setup mocks
+        mock_config = Mock()
+        mock_config_class.from_file.return_value = mock_config
+        
+        mock_pipeline = Mock()
+        mock_pipeline_class.return_value = mock_pipeline
+        
+        # Run command in batch mode (no subdirectories)
+        runner = CliRunner()
+        result = runner.invoke(analyze_command, [
+            "--input", str(temp_images_dir),
+            "--config", temp_config_file,
+            "--batch"
+        ])
+        
+        # Verify failure
+        assert result.exit_code == 0  # Should exit gracefully
+        assert "No subdirectories found for batch processing" in result.output
     
     @patch('vis2attr.cli.analyze.PipelineService')
     @patch('vis2attr.cli.analyze.Config')
@@ -519,6 +614,7 @@ class TestAnalyzeCommandIntegration:
         
         # Verify success
         assert result_cli.exit_code == 0
+        assert "Processing 1 files as separate items" in result_cli.output
         assert "Analysis completed" in result_cli.output
         assert "✅ Successful: 1" in result_cli.output
         assert "❌ Failed: 0" in result_cli.output
