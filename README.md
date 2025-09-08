@@ -1,154 +1,189 @@
-Here’s a **minimalist MVP architecture doc** for **vis2attr**—focused on general concepts, modularity, and a clean path to scale.
+# vis2attr
 
-# 1) Purpose
+**Visual Language Model for Attribute Extraction**
 
-Turn a few item photos into **structured attributes** (e.g., brand, colors, materials) using a **Visual Language Model (VLM)**. Output strict JSON, per-field confidence, and “unknown” when unsure.
+Turn item photos into structured attributes (brand, colors, materials, condition) using Visual Language Models. Output strict JSON with per-field confidence scores.
 
-# 2) Scope (MVP)
+## Current Status: MVP Implementation
 
-* VLM-only pipeline (no custom CV training).
-* Local-first (CLI), optional lightweight API later.
-* Pluggable **schema**, **ingestors**, **providers**, **storage** via config.
+This project is currently in **MVP development phase** with core infrastructure implemented and ready for pipeline integration.
 
-# 3) Core principles
+### ✅ Implemented Features
 
-* **Schema-first & config-driven** (no hard-coding fields).
-* **Ports & adapters** (hexagonal): stable interfaces; swappable implementations.
-* **Stateless, small modules**; side-effects isolated in storage/logging.
-* **Observability by default** (metrics, cost, latency).
+- **Core Data Models**: Complete schema definitions for Item, VLMRequest, VLMRaw, Attributes, and Decision
+- **Configuration System**: YAML-based configuration with schema validation
+- **CLI Interface**: `analyze` and `report` commands (framework ready)
+- **File System Ingestor**: Image loading, processing, and validation with EXIF stripping
+- **Mistral AI Provider**: Full implementation with vision model support
+- **JSON Parser**: Structured response parsing with confidence extraction
+- **File Storage Backend**: Local storage with organized directory structure
+- **Factory Patterns**: Pluggable architecture for providers, parsers, and storage
+- **Schema System**: YAML-based attribute schemas with Jinja2 prompt templates
+- **Comprehensive Testing**: Full test suite covering all implemented components
 
-# 4) System overview (blocks)
+### 🚧 In Development
+
+- **Pipeline Integration**: Connecting all components into working pipeline
+- **Additional Providers**: OpenAI, Google, Anthropic (Mistral currently implemented)
+- **Decision Rules Engine**: Quality thresholds and acceptance logic
+- **Metrics & Logging**: Observability and performance tracking
+- **Report Generation**: Analysis and quality reporting functionality
+
+### 📋 Planned Features
+
+- **URL/API Ingestors**: Remote image loading
+- **Advanced Parsers**: Support for different response formats
+- **Web API**: RESTful interface for production use
+
+## Architecture Overview
 
 ```mermaid
 flowchart LR
-  A[Ingestor] --> B[Prompt Builder]
-  B --> C[VLM Client]
-  C --> D[Parser / Normalizer]
+  A[File Ingestor] --> B[Prompt Builder]
+  B --> C[Mistral Provider]
+  C --> D[JSON Parser]
   D --> E[Decision Rules]
-  E --> F[Storage]
+  E --> F[File Storage]
   A --> G[Metrics & Logging]
   C --> G
   D --> G
   E --> G
 ```
 
-## Block roles (generic)
+### Component Status
 
-* **Ingestor**: load images (fs/urls/api), basic QC/resize → `Item`.
-* **Prompt Builder**: schema + template + images → `VLMRequest`.
-* **VLM Client**: provider adapter (OpenAI/Gemini/Claude) → `VLMRaw`.
-* **Parser/Normalizer**: safe JSON parse, coerce to schema, map values → `Attributes`.
-* **Decision Rules**: thresholds/tags, accept vs needs\_review → `Decision`.
-* **Storage**: write outputs/lineage (JSONL/Parquet now; S3/DB later).
-* **Metrics & Logging**: latency, coverage, cost, flags; structured logs.
+| Component | Status | Implementation |
+|-----------|--------|----------------|
+| **File Ingestor** | ✅ Complete | Image loading, processing, EXIF stripping |
+| **Prompt Builder** | ✅ Complete | Jinja2 templates with schema integration |
+| **Mistral Provider** | ✅ Complete | Full VLM integration with cost tracking |
+| **JSON Parser** | ✅ Complete | Structured response parsing |
+| **Decision Rules** | 🚧 Planned | Quality thresholds and acceptance logic |
+| **File Storage** | ✅ Complete | Organized local storage with lineage |
+| **Metrics & Logging** | 🚧 Planned | Performance and cost tracking |
 
-# 5) Data contracts (high-level)
+## Data Models
 
-* **Item**: `{ item_id, images:[bytes|uri], meta:{} }`
-* **VLMRequest**: `{ model, messages, images, max_tokens, temperature }`
-* **VLMRaw**: `{ content:str, usage:{tokens…}, latency_ms }`
-* **Attributes**: `{ data: dict, confidences: {field: float}, tags: set, notes, lineage }`
-* **Decision**: `{ accepted: bool, field_flags: {field:reason}, reasons: [str] }`
+The system uses well-defined data contracts for type safety and consistency:
 
-> `Attributes.data` is a dict so any **custom schema** can be loaded at runtime.
+* **Item**: `{ item_id: str, images: List[bytes], meta: Dict[str, Any] }`
+* **VLMRequest**: `{ model: str, messages: List[Dict], images: List[bytes], max_tokens: int, temperature: float }`
+* **VLMRaw**: `{ content: str, usage: Dict[str, Any], latency_ms: float, provider: str, model: str, timestamp: datetime }`
+* **Attributes**: `{ data: Dict[str, Any], confidences: Dict[str, float], tags: Set[str], notes: str, lineage: Dict[str, Any] }`
+* **Decision**: `{ accepted: bool, field_flags: Dict[str, str], reasons: List[str], confidence_score: float }`
 
-# 6) Minimal schema example (generic)
+> `Attributes.data` is a dict to support any custom schema loaded at runtime.
 
-```json
-{
-  "brand": {"value": null, "confidence": 0.0},
-  "model_or_type": {"value": null, "confidence": 0.0},
-  "primary_colors": [{"name": "", "confidence": 0.0}],
-  "materials": [{"name": "", "confidence": 0.0}],
-  "condition": {"value": null, "confidence": 0.0},
-  "notes": ""
-}
+## Default Schema
+
+The system uses a YAML-based schema definition:
+
+```yaml
+brand:
+  value: null
+  confidence: 0.0
+
+model_or_type:
+  value: null
+  confidence: 0.0
+
+primary_colors:
+  - name: ""
+    confidence: 0.0
+
+materials:
+  - name: ""
+    confidence: 0.0
+
+condition:
+  value: null
+  confidence: 0.0
+
+notes: ""
 ```
 
-# 7) Configuration (single source of truth)
+## Configuration
 
-* `project.yaml`
+The system uses a single YAML configuration file (`config/project.yaml`):
 
-  * `ingestor: ingest.fs | ingest.urls | ingest.api`
-  * `provider: providers.openai | providers.google | providers.anthropic`
-  * `storage: storage.files | storage.s3`
-  * `schema_path: config/schemas/<domain>.yaml`
-  * `prompt_template: config/prompts/default.jinja`
-  * `thresholds: { default: 0.75, brand: 0.80, ... }`
-  * `io: { max_images_per_item: 3, max_resolution: 768 }`
+```yaml
+# Pipeline components
+ingestor: ingest.fs  # File system ingestor
+provider: providers.mistral  # Mistral AI provider
+storage: storage.files  # Local file storage
 
-# 8) Control flow (MVP)
+# Schema and prompts
+schema_path: config/schemas/default.yaml
+prompt_template: config/prompts/default.jinja
 
-1. **Load** images → `Item`
-2. **Build prompt** from schema/template → `VLMRequest`
-3. **Call VLM** → `VLMRaw`
-4. **Parse/normalize** → `Attributes`
-5. **Decide** (thresholds/tags) → `Decision`
-6. **Persist** outputs + lineage; **emit metrics**
+# Decision thresholds
+thresholds:
+  default: 0.75
+  brand: 0.80
+  model_or_type: 0.70
+  primary_colors: 0.65
+  materials: 0.70
+  condition: 0.75
 
-# 9) Interfaces (swap points)
+# I/O settings
+io:
+  max_images_per_item: 3
+  max_resolution: 768
+  supported_formats: [".jpg", ".jpeg", ".png", ".webp"]
 
-```python
-class Ingestor:  def load(self, source) -> Item: ...
-class Provider:  def predict(self, req: VLMRequest) -> VLMRaw: ...
-class Storage:   def write(self, item: Item, attrs: Attributes, dec: Decision) -> str: ...
+# Provider settings
+providers:
+  mistral:
+    model: "pixtral-12b-latest"
+    max_tokens: 1000
+    temperature: 0.1
 ```
 
-# 10) Observability (minimum)
+## Installation & Setup
 
-* **Metrics:** coverage (% non-unknown), p50/p95 latency, tokens/item, \$/item (est.), % flagged.
-* **Logs:** JSON logs with `request_id`, `item_id`, provider, timing, warnings (no PII).
-* **Report CLI:** aggregates metrics; fails CI if below gates.
+```bash
+# Clone and install
+git clone <repository>
+cd vis2attr
+uv venv && source .venv/bin/activate
+uv pip install -e .
 
-# 11) Non-goals (MVP)
+# Set up API key
+export MISTRAL_API_KEY=your_api_key_here
 
-* No custom training, no segmentation/detection.
-* No hard dependency on a single provider.
-* No complex workflow engine (simple, linear pipeline).
+# Run analysis (when pipeline is complete)
+vis2attr analyze --input ./images --config config/project.yaml --output ./predictions.parquet
+vis2attr report --predictions ./predictions.parquet
+```
 
-# 12) Security & data hygiene (lightweight)
-
-* API keys via env; `.env.example` for local.
-* Strip EXIF; avoid faces/PII; don’t log image bytes.
-* If remote images, use signed URLs; delete temp files after processing.
-
-# 13) Minimal repo scaffold
+## Project Structure
 
 ```
 vis2attr/
-  pyproject.toml
-  README.md
-  config/{project.yaml, schemas/, prompts/, palettes/}
-  src/vis2attr/
-    core/{schemas.py, config.py}
-    ingest/{fs.py, urls.py, api.py}
-    prompt/{templates/, builder.py}
-    providers/{openai.py, google.py, anthropic.py, factory.py}
-    parse/{parser.py, normalizer.py}
-    rules/decider.py
-    storage/{files.py, s3.py}
-    metrics/{metrics.py, logging.py}
-    cli/{analyze.py, report.py}
-  tests/
+├── config/
+│   ├── project.yaml          # Main configuration
+│   ├── schemas/default.yaml  # Attribute schema
+│   └── prompts/default.jinja # Prompt template
+├── src/vis2attr/
+│   ├── core/                 # Data models and config
+│   ├── cli/                  # Command-line interface
+│   ├── ingest/               # Image loading (fs.py)
+│   ├── providers/            # VLM providers (mistral.py)
+│   ├── parse/                # Response parsing (json_parser.py)
+│   ├── storage/              # Data persistence (files.py)
+│   └── prompt/               # Template system
+├── tests/                    # Comprehensive test suite
+└── storage/                  # Local data storage
 ```
 
-# 14) MVP KPIs (go/no-go)
+## Development Status
 
-* **Quality:** coverage ≥ 80% on a 200-item golden set.
-* **Latency:** p95 ≤ 3s per item (2–3 images).
-* **Reliability:** 0 schema violations; <1% API error after retries.
-* **Cost clarity:** real \$/item measured on pilot.
+This project is in active development. The core infrastructure is complete and ready for pipeline integration. The next major milestone is connecting all components into a working end-to-end pipeline.
 
-# 15) Quickstart (operator view)
+### Key Design Principles
 
-```bash
-uv venv && source .venv/bin/activate
-uv pip install -e .
-export PROVIDER_API_KEY=...
-vis2attr analyze --input ./images --config config/project.yaml --out ./predictions.parquet
-vis2attr report  --pred ./predictions.parquet
-```
-
----
-
-**MVP essence:** a small, schema-driven pipeline of interchangeable blocks. Change domain, provider, or storage by changing config—not code.
+- **Schema-first & config-driven**: No hard-coded fields
+- **Ports & adapters**: Swappable implementations via factory patterns
+- **Stateless modules**: Side-effects isolated in storage
+- **Type safety**: Comprehensive data models with validation
+- **Testability**: Full test coverage for all components
