@@ -9,6 +9,12 @@ from dotenv import load_dotenv
 from mistralai import Mistral
 from .base import Provider, ProviderAPIError, ProviderConfigError, ProviderRateLimitError, ProviderTimeoutError
 from ..core.schemas import VLMRequest, VLMRaw
+from ..core.constants import (
+    MISTRAL_MAX_TOKENS_ESTIMATE,
+    MISTRAL_MODEL_COSTS,
+    DEFAULT_COST_PER_1K_TOKENS,
+    SECONDS_TO_MILLISECONDS
+)
 
 
 class MistralProvider(Provider):
@@ -78,7 +84,7 @@ class MistralProvider(Provider):
             )
             
             # Calculate latency
-            latency_ms = (time.time() - start_time) * 1000
+            latency_ms = (time.time() - start_time) * SECONDS_TO_MILLISECONDS
             
             # Extract response content
             content = response.choices[0].message.content
@@ -125,14 +131,7 @@ class MistralProvider(Provider):
         """
         # Rough cost estimation based on Mistral pricing
         # These are approximate values - actual pricing may differ
-        model_costs = {
-            "pixtral-12b-latest": 0.0003,  # per 1K tokens
-            "pixtral-large-latest": 0.0006,
-            "mistral-medium-latest": 0.0004,
-            "mistral-small-latest": 0.0002
-        }
-        
-        cost_per_1k = model_costs.get(request.model, 0.0003)
+        cost_per_1k = MISTRAL_MODEL_COSTS.get(request.model, DEFAULT_COST_PER_1K_TOKENS)
         estimated_tokens = request.max_tokens + 100  # Add some overhead
         return (estimated_tokens / 1000) * cost_per_1k
     
@@ -149,7 +148,7 @@ class MistralProvider(Provider):
     @property
     def max_tokens_per_request(self) -> int:
         """Get maximum tokens per request."""
-        return 32000  # Conservative estimate for Mistral models
+        return MISTRAL_MAX_TOKENS_ESTIMATE  # Conservative estimate for Mistral models
     
     def _convert_messages(self, messages: List[Dict[str, Any]], images: List[Union[bytes, str]]) -> List[Dict[str, Any]]:
         """Convert VLMRequest messages to Mistral format.

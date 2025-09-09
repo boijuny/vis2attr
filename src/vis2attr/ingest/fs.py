@@ -8,6 +8,12 @@ import hashlib
 import uuid
 
 from ..core.schemas import Item
+from ..core.constants import (
+    DEFAULT_MAX_RESOLUTION,
+    DEFAULT_MAX_IMAGES_PER_ITEM,
+    DEFAULT_SUPPORTED_FORMATS,
+    DEFAULT_STRIP_EXIF
+)
 
 
 class FileSystemIngestor:
@@ -16,9 +22,9 @@ class FileSystemIngestor:
     def __init__(
         self,
         supported_formats: List[str] = None,
-        max_images_per_item: int = 3,
-        max_resolution: int = 768,
-        strip_exif: bool = True
+        max_images_per_item: int = DEFAULT_MAX_IMAGES_PER_ITEM,
+        max_resolution: int = DEFAULT_MAX_RESOLUTION,
+        strip_exif: bool = DEFAULT_STRIP_EXIF
     ):
         """Initialize the file system ingestor.
         
@@ -28,7 +34,7 @@ class FileSystemIngestor:
             max_resolution: Maximum image resolution (width or height)
             strip_exif: Whether to strip EXIF data from images
         """
-        self.supported_formats = supported_formats or [".jpg", ".jpeg", ".png", ".webp"]
+        self.supported_formats = supported_formats or DEFAULT_SUPPORTED_FORMATS
         self.max_images_per_item = max_images_per_item
         self.max_resolution = max_resolution
         self.strip_exif = strip_exif
