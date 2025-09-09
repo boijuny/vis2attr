@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Union
 from jinja2 import Environment, FileSystemLoader, Template
 from .base import PromptBuilder
 from ..core.schemas import Item, VLMRequest
+from ..core.constants import DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE
 
 
 class JinjaPromptBuilder(PromptBuilder):
@@ -43,8 +44,8 @@ class JinjaPromptBuilder(PromptBuilder):
         item: Item, 
         schema: Dict[str, Any], 
         model: str,
-        max_tokens: int = 1000,
-        temperature: float = 0.1
+        max_tokens: int = DEFAULT_MAX_TOKENS,
+        temperature: float = DEFAULT_TEMPERATURE
     ) -> VLMRequest:
         """Build a VLM request from an item and schema.
         

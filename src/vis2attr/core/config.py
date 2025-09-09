@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 
+from .constants import DEFAULT_CONFIDENCE_THRESHOLD
+
 
 @dataclass
 class Config:
@@ -56,7 +58,7 @@ class Config:
     
     def get_threshold(self, field_name: str) -> float:
         """Get confidence threshold for a specific field."""
-        return self.thresholds.get(field_name, self.thresholds.get('default', 0.75))
+        return self.thresholds.get(field_name, self.thresholds.get('default', DEFAULT_CONFIDENCE_THRESHOLD))
     
     def get_storage_config(self) -> Dict[str, Any]:
         """Get storage configuration."""

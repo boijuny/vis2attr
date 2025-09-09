@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Union, Any
 from datetime import datetime, timezone
 
+from .constants import DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE
+
 
 @dataclass
 class Item:
@@ -23,8 +25,8 @@ class VLMRequest:
     model: str
     messages: List[Dict[str, Any]]
     images: List[Union[bytes, str]]
-    max_tokens: int = 1000
-    temperature: float = 0.1
+    max_tokens: int = DEFAULT_MAX_TOKENS
+    temperature: float = DEFAULT_TEMPERATURE
 
 
 @dataclass

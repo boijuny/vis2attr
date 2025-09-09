@@ -7,6 +7,13 @@ from datetime import datetime
 
 from ..core.config import Config
 from ..core.schemas import Item, VLMRequest, VLMRaw, Attributes, Decision
+from ..core.constants import (
+    DEFAULT_MAX_IMAGES_PER_ITEM,
+    DEFAULT_MAX_RESOLUTION,
+    DEFAULT_MAX_TOKENS,
+    DEFAULT_TEMPERATURE,
+    SECONDS_TO_MILLISECONDS
+)
 from ..ingest.fs import FileSystemIngestor
 from ..prompt.builder import JinjaPromptBuilder
 from ..providers.factory import create_provider
@@ -81,8 +88,8 @@ class PipelineService:
                 io_config = self.config.io
                 self.ingestor = FileSystemIngestor(
                     supported_formats=io_config.get("supported_formats", [".jpg", ".jpeg", ".png", ".webp"]),
-                    max_images_per_item=io_config.get("max_images_per_item", 3),
-                    max_resolution=io_config.get("max_resolution", 768),
+                    max_images_per_item=io_config.get("max_images_per_item", DEFAULT_MAX_IMAGES_PER_ITEM),
+                    max_resolution=io_config.get("max_resolution", DEFAULT_MAX_RESOLUTION),
                     strip_exif=self.config.security.get("strip_exif", True)
                 )
             else:
@@ -169,8 +176,8 @@ class PipelineService:
                 item=item,
                 schema=schema,
                 model=provider_config.get("model", "gpt-4-vision-preview"),
-                max_tokens=provider_config.get("max_tokens", 1000),
-                temperature=provider_config.get("temperature", 0.1)
+                max_tokens=provider_config.get("max_tokens", DEFAULT_MAX_TOKENS),
+                temperature=provider_config.get("temperature", DEFAULT_TEMPERATURE)
             )
             self.logger.debug(f"Built VLM request for model: {vlm_request.model}")
             
@@ -195,7 +202,7 @@ class PipelineService:
             self.logger.info(f"Stored results with IDs: {storage_ids}")
             
             # Calculate processing time
-            processing_time = (datetime.now() - start_time).total_seconds() * 1000
+            processing_time = (datetime.now() - start_time).total_seconds() * SECONDS_TO_MILLISECONDS
             
             self.logger.info(f"Analysis completed successfully for {item_id} in {processing_time:.1f}ms")
             
@@ -210,7 +217,7 @@ class PipelineService:
             )
             
         except Exception as e:
-            processing_time = (datetime.now() - start_time).total_seconds() * 1000
+            processing_time = (datetime.now() - start_time).total_seconds() * SECONDS_TO_MILLISECONDS
             error_msg = f"Pipeline failed: {str(e)}"
             self.logger.error(error_msg, exc_info=True)
             

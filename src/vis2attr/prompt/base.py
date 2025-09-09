@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Union
 from ..core.schemas import Item, VLMRequest
+from ..core.constants import DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE
 
 
 class PromptBuilder(ABC):
@@ -25,8 +26,8 @@ class PromptBuilder(ABC):
         item: Item, 
         schema: Dict[str, Any], 
         model: str,
-        max_tokens: int = 1000,
-        temperature: float = 0.1
+        max_tokens: int = DEFAULT_MAX_TOKENS,
+        temperature: float = DEFAULT_TEMPERATURE
     ) -> VLMRequest:
         """Build a VLM request from an item and schema.
         
