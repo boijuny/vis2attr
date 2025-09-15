@@ -3,9 +3,7 @@
 import base64
 import os
 import time
-from pathlib import Path
 from typing import Dict, Any, List, Union
-from dotenv import load_dotenv
 from mistralai import Mistral
 from .base import Provider, ProviderAPIError, ProviderConfigError, ProviderRateLimitError, ProviderTimeoutError
 from ..core.schemas import VLMRequest, VLMRaw
@@ -56,15 +54,8 @@ class MistralProvider(Provider):
             ProviderTimeoutError: If request times out
         """
         try:
-            # Load .env file from project root
-            project_root = Path(__file__).parent.parent.parent.parent
-            env_file = project_root / ".env"
-            if env_file.exists():
-                load_dotenv(env_file)            
             # Load API key from environment variable
-            api_key = os.getenv("MISTRAL_API_KEY")
-            if not api_key:
-                raise ProviderConfigError("MISTRAL_API_KEY environment variable not set")
+            api_key = self.get_api_key("MISTRAL_API_KEY")
             
             # Initialize Mistral client
             client = Mistral(api_key=api_key)
