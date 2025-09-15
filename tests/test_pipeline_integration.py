@@ -387,7 +387,9 @@ class TestPipelineIntegration:
         
         # Verify error handling
         assert result.success is False
-        assert result.error == "Pipeline failed: Ingestion failed"
+        assert "Pipeline analysis failed" in result.error
+        assert "Ingestion failed" in result.error
+        assert "original_error=Ingestion failed" in result.error
         assert result.processing_time_ms > 0
         assert result.attributes is None
         assert result.decision is None

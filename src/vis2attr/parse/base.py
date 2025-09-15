@@ -3,9 +3,10 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
 from ..core.schemas import VLMRaw, Attributes
+from ..core.exceptions import ProcessingError
 
 
-class ParseError(Exception):
+class ParseError(ProcessingError):
     """Raised when parsing fails."""
     pass
 

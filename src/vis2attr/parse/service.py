@@ -34,7 +34,15 @@ class ParseService:
         try:
             return self.factory.parse_response(raw_response, schema)
         except Exception as e:
-            raise ParseError(f"Failed to parse response: {e}")
+            raise ParseError(
+                f"Failed to parse response: {e}",
+                context={
+                    "provider": raw_response.provider,
+                    "model": raw_response.model,
+                    "content_length": len(raw_response.content) if raw_response.content else 0
+                },
+                recovery_hint="Check response format and schema compatibility"
+            ) from e
     
     def parse_with_specific_parser(self, raw_response: VLMRaw, schema: Dict[str, Any], parser_name: str) -> Attributes:
         """Parse response using a specific parser.

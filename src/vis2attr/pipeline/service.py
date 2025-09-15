@@ -14,16 +14,15 @@ from ..core.constants import (
     DEFAULT_TEMPERATURE,
     SECONDS_TO_MILLISECONDS
 )
+from ..core.exceptions import (
+    PipelineError, ConfigurationError, ResourceError, ProcessingError,
+    wrap_exception, create_pipeline_error
+)
 from ..ingest.fs import FileSystemIngestor
 from ..prompt.builder import JinjaPromptBuilder
 from ..providers.factory import create_provider
 from ..parse.service import ParseService
 from ..storage.factory import create_storage_backend
-
-
-class PipelineError(Exception):
-    """Exception raised when pipeline operations fail."""
-    pass
 
 
 class PipelineResult:
@@ -97,7 +96,8 @@ class PipelineService:
             
             self.logger.info(f"Ingestor initialized: {self.config.ingestor}")
         except Exception as e:
-            raise PipelineError(f"Failed to initialize ingestor: {e}") from e
+            raise wrap_exception(e, "Failed to initialize ingestor", 
+                               {"ingestor": self.config.ingestor})
     
     def _setup_prompt_builder(self) -> None:
         """Set up the prompt builder."""
@@ -109,7 +109,8 @@ class PipelineService:
             self.prompt_builder = JinjaPromptBuilder(prompt_config)
             self.logger.info(f"Prompt builder initialized with template: {self.config.prompt_template}")
         except Exception as e:
-            raise PipelineError(f"Failed to initialize prompt builder: {e}") from e
+            raise wrap_exception(e, "Failed to initialize prompt builder", 
+                               {"template": self.config.prompt_template})
     
     def _setup_provider(self) -> None:
         """Set up the VLM provider."""
@@ -120,7 +121,8 @@ class PipelineService:
             self.provider = create_provider(provider_name, provider_config)
             self.logger.info(f"Provider initialized: {provider_name}")
         except Exception as e:
-            raise PipelineError(f"Failed to initialize provider: {e}") from e
+            raise wrap_exception(e, "Failed to initialize provider", 
+                               {"provider": provider_name})
     
     def _setup_parser(self) -> None:
         """Set up the response parser."""
@@ -128,7 +130,7 @@ class PipelineService:
             self.parser = ParseService()
             self.logger.info("Parser service initialized")
         except Exception as e:
-            raise PipelineError(f"Failed to initialize parser: {e}") from e
+            raise wrap_exception(e, "Failed to initialize parser")
     
     def _setup_storage(self) -> None:
         """Set up the storage backend."""
@@ -139,7 +141,8 @@ class PipelineService:
             self.storage = create_storage_backend(storage_name, storage_config)
             self.logger.info(f"Storage backend initialized: {storage_name}")
         except Exception as e:
-            raise PipelineError(f"Failed to initialize storage: {e}") from e
+            raise wrap_exception(e, "Failed to initialize storage", 
+                               {"storage": storage_name})
     
     def analyze_item(self, input_path: Union[str, Path]) -> PipelineResult:
         """Analyze a single item through the complete pipeline.
@@ -218,13 +221,14 @@ class PipelineService:
             
         except Exception as e:
             processing_time = (datetime.now() - start_time).total_seconds() * SECONDS_TO_MILLISECONDS
-            error_msg = f"Pipeline failed: {str(e)}"
-            self.logger.error(error_msg, exc_info=True)
+            wrapped_error = wrap_exception(e, "Pipeline analysis failed", 
+                                         {"item_id": item_id, "input_path": str(input_path)})
+            self.logger.error(str(wrapped_error), exc_info=True)
             
             return PipelineResult(
                 item_id=item_id or "unknown",
                 success=False,
-                error=error_msg,
+                error=str(wrapped_error),
                 processing_time_ms=processing_time
             )
     
@@ -359,8 +363,10 @@ class PipelineService:
             storage_ids["lineage"] = lineage_id
             
         except Exception as e:
-            self.logger.error(f"Failed to store results for {item_id}: {e}")
-            raise PipelineError(f"Storage failed: {e}") from e
+            wrapped_error = wrap_exception(e, "Failed to store results", 
+                                         {"item_id": item_id})
+            self.logger.error(str(wrapped_error))
+            raise wrapped_error
         
         return storage_ids
     

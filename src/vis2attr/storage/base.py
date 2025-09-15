@@ -5,9 +5,10 @@ from typing import Dict, Any, Optional, List, Union
 from pathlib import Path
 from datetime import datetime
 from ..core.schemas import Attributes, VLMRaw, Item
+from ..core.exceptions import ResourceError
 
 
-class StorageError(Exception):
+class StorageError(ResourceError):
     """Raised when storage operations fail."""
     pass
 
