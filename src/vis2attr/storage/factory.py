@@ -2,16 +2,16 @@
 
 from typing import Dict, Any, Optional, Type
 from .base import StorageBackend
-from .files import FileStorage
+from .parquet import ParquetStorage
 
 
 class StorageFactory:
     """Factory for creating storage backends based on configuration."""
     
     _backends: Dict[str, Type[StorageBackend]] = {
-        'files': FileStorage,
-        'file': FileStorage,  # Alias
-        'local': FileStorage,  # Alias
+        'parquet': ParquetStorage,
+        'pq': ParquetStorage,  # Alias
+        'default': ParquetStorage,  # Default
     }
     
     @classmethod
@@ -19,7 +19,7 @@ class StorageFactory:
         """Create a storage backend instance.
         
         Args:
-            backend_type: Type of storage backend ('files', 'file', 'local')
+            backend_type: Type of storage backend ('parquet', 'pq', 'default')
             config: Backend-specific configuration
             
         Returns:
@@ -86,7 +86,7 @@ def create_storage_backend(backend_type: str, config: Optional[Dict[str, Any]] =
     """Create a storage backend instance using the factory.
     
     Args:
-        backend_type: Type of storage backend ('files', 'file', 'local')
+        backend_type: Type of storage backend ('parquet', 'pq', 'default')
         config: Backend-specific configuration
         
     Returns:
