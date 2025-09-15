@@ -51,7 +51,11 @@ class ProviderFactory:
         try:
             return provider_class(config)
         except Exception as e:
-            raise ProviderConfigError(f"Failed to create provider '{name}': {e}") from e
+            raise ProviderConfigError(
+                f"Failed to create provider '{name}': {e}",
+                context={"provider": name, "config_keys": list(config.keys())},
+                recovery_hint="Check provider configuration and dependencies"
+            ) from e
     
     @classmethod
     def get_available_providers(cls) -> list[str]:

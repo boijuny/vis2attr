@@ -95,7 +95,11 @@ class FileStorage(StorageBackend):
             return storage_id
             
         except Exception as e:
-            raise StorageError(f"Failed to store attributes for item {item_id}: {str(e)}")
+            raise StorageError(
+                f"Failed to store attributes for item {item_id}: {str(e)}",
+                context={"item_id": item_id, "operation": "store_attributes"},
+                recovery_hint="Check storage permissions and disk space"
+            ) from e
     
     def store_raw_response(self, item_id: str, raw_response: VLMRaw,
                           metadata: Optional[Dict[str, Any]] = None) -> str:
@@ -151,7 +155,11 @@ class FileStorage(StorageBackend):
             return storage_id
             
         except Exception as e:
-            raise StorageError(f"Failed to store raw response for item {item_id}: {str(e)}")
+            raise StorageError(
+                f"Failed to store raw response for item {item_id}: {str(e)}",
+                context={"item_id": item_id, "operation": "store_raw_response"},
+                recovery_hint="Check storage permissions and disk space"
+            ) from e
     
     def store_lineage(self, item_id: str, lineage: Dict[str, Any],
                      metadata: Optional[Dict[str, Any]] = None) -> str:
@@ -200,7 +208,11 @@ class FileStorage(StorageBackend):
             return storage_id
             
         except Exception as e:
-            raise StorageError(f"Failed to store lineage for item {item_id}: {str(e)}")
+            raise StorageError(
+                f"Failed to store lineage for item {item_id}: {str(e)}",
+                context={"item_id": item_id, "operation": "store_lineage"},
+                recovery_hint="Check storage permissions and disk space"
+            ) from e
     
     def retrieve_attributes(self, storage_id: str) -> Optional[Attributes]:
         """Retrieve stored attributes by storage ID.

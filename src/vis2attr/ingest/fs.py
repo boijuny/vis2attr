@@ -8,6 +8,7 @@ import hashlib
 import uuid
 
 from ..core.schemas import Item
+from ..core.exceptions import IngestError, create_ingest_error
 from ..core.constants import (
     DEFAULT_MAX_RESOLUTION,
     DEFAULT_MAX_IMAGES_PER_ITEM,
@@ -164,7 +165,11 @@ class FileSystemIngestor:
                 return img_bytes.getvalue()
                 
         except Exception as e:
-            raise ValueError(f"Failed to process image {file_path}: {e}")
+            raise create_ingest_error(
+                f"Failed to process image: {e}",
+                file_path=str(file_path),
+                file_type=file_path.suffix
+            ) from e
     
     def _generate_item_id(self, path: Path) -> str:
         """Generate a unique item ID based on the path."""

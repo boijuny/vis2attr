@@ -9,6 +9,7 @@ from datetime import datetime
 
 from vis2attr.core.config import Config
 from vis2attr.core.schemas import Item, VLMRequest, VLMRaw, Attributes, Decision
+from vis2attr.core.exceptions import VLMError
 from vis2attr.pipeline.service import PipelineService, PipelineError, PipelineResult
 
 
@@ -181,7 +182,7 @@ class TestPipelineServiceInit:
         """Test initialization failure when ingestor setup fails."""
         mock_ingestor.side_effect = Exception("Ingestor setup failed")
         
-        with pytest.raises(PipelineError, match="Failed to initialize ingestor"):
+        with pytest.raises(VLMError, match="Failed to initialize ingestor"):
             PipelineService(sample_config)
     
     @patch('vis2attr.pipeline.service.FileSystemIngestor')
@@ -191,7 +192,7 @@ class TestPipelineServiceInit:
         mock_ingestor.return_value = Mock()
         mock_prompt.side_effect = Exception("Prompt builder setup failed")
         
-        with pytest.raises(PipelineError, match="Failed to initialize prompt builder"):
+        with pytest.raises(VLMError, match="Failed to initialize prompt builder"):
             PipelineService(sample_config)
 
 
@@ -285,7 +286,9 @@ class TestPipelineServiceAnalyzeItem:
         # Verify result
         assert isinstance(result, PipelineResult)
         assert result.success is False
-        assert result.error == "Pipeline failed: Ingestion failed"
+        assert "Pipeline analysis failed" in result.error
+        assert "Ingestion failed" in result.error
+        assert "original_error=Ingestion failed" in result.error
         assert result.processing_time_ms > 0
     
     @patch('vis2attr.pipeline.service.create_storage_backend')
@@ -323,7 +326,9 @@ class TestPipelineServiceAnalyzeItem:
         # Verify result
         assert isinstance(result, PipelineResult)
         assert result.success is False
-        assert result.error == "Pipeline failed: Provider failed"
+        assert "Pipeline analysis failed" in result.error
+        assert "Provider failed" in result.error
+        assert "original_error=Provider failed" in result.error
         assert result.item_id == "test_item_123"
 
 
@@ -432,7 +437,9 @@ class TestPipelineServiceAnalyzeBatch:
         
         assert len(successful) == 2
         assert len(failed) == 1
-        assert failed[0].error == "Pipeline failed: Ingestion failed"
+        assert "Pipeline analysis failed" in failed[0].error
+        assert "Ingestion failed" in failed[0].error
+        assert "original_error=Ingestion failed" in failed[0].error
 
 
 class TestPipelineServiceDecisionMaking:

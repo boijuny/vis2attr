@@ -4,19 +4,20 @@ import os
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 from ..core.schemas import VLMRequest, VLMRaw
+from ..core.exceptions import VLMError, ConfigurationError, ResourceError
 
 
-class ProviderError(Exception):
+class ProviderError(VLMError):
     """Base exception for provider-related errors."""
     pass
 
 
-class ProviderConfigError(ProviderError):
+class ProviderConfigError(ConfigurationError):
     """Raised when provider configuration is invalid."""
     pass
 
 
-class ProviderAPIError(ProviderError):
+class ProviderAPIError(ResourceError):
     """Raised when provider API call fails."""
     pass
 
