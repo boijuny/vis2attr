@@ -5,6 +5,7 @@ import re
 from typing import Dict, Any, List, Optional
 from .base import Parser, ParseError
 from ..core.schemas import VLMRaw, Attributes
+from ..core.config import ConfigWrapper
 
 
 class JSONParser(Parser):
@@ -20,9 +21,10 @@ class JSONParser(Parser):
                 - fallback_to_text: If True, try to extract structured data from text (default: False)
         """
         super().__init__(config)
-        self.strict_json = self.config.get('strict_json', False)
-        self.extract_from_markdown = self.config.get('extract_from_markdown', True)
-        self.fallback_to_text = self.config.get('fallback_to_text', False)
+        config_wrapper = ConfigWrapper(self.config)
+        self.strict_json = config_wrapper.get_bool('strict_json', False)
+        self.extract_from_markdown = config_wrapper.get_bool('extract_from_markdown', True)
+        self.fallback_to_text = config_wrapper.get_bool('fallback_to_text', False)
     
     def can_parse(self, raw_response: VLMRaw) -> bool:
         """Check if response can be parsed as JSON.

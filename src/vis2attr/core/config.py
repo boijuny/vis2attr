@@ -3,11 +3,13 @@
 import os
 import yaml
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TypeVar, Union
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
 from .constants import DEFAULT_CONFIDENCE_THRESHOLD
+
+T = TypeVar('T')
 
 
 @dataclass
@@ -103,3 +105,98 @@ class Config:
     def get_storage_config(self) -> Dict[str, Any]:
         """Get storage configuration."""
         return self.storage_config or {}
+
+
+class ConfigWrapper:
+    """Lightweight configuration wrapper with typed access and defaults."""
+    
+    def __init__(self, config: Dict[str, Any]):
+        """Initialize with configuration dictionary.
+        
+        Args:
+            config: Configuration dictionary
+        """
+        self._config = config
+    
+    def get(self, key: str, default: T = None) -> T:
+        """Get configuration value with type-safe default.
+        
+        Args:
+            key: Configuration key (supports dot notation for nested access)
+            default: Default value to return if key not found
+            
+        Returns:
+            Configuration value or default
+        """
+        return self._get_nested_value(key, default)
+    
+    def get_bool(self, key: str, default: bool = False) -> bool:
+        """Get boolean configuration value.
+        
+        Args:
+            key: Configuration key
+            default: Default boolean value
+            
+        Returns:
+            Boolean configuration value
+        """
+        value = self._get_nested_value(key, default)
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower() in ('true', '1', 'yes', 'on')
+        return bool(value)
+    
+    def get_int(self, key: str, default: int = 0) -> int:
+        """Get integer configuration value.
+        
+        Args:
+            key: Configuration key
+            default: Default integer value
+            
+        Returns:
+            Integer configuration value
+        """
+        value = self._get_nested_value(key, default)
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+        return default
+    
+    def get_list(self, key: str, default: list = None) -> list:
+        """Get list configuration value.
+        
+        Args:
+            key: Configuration key
+            default: Default list value
+            
+        Returns:
+            List configuration value
+        """
+        if default is None:
+            default = []
+        value = self._get_nested_value(key, default)
+        if isinstance(value, list):
+            return value
+        return default
+    
+    def _get_nested_value(self, key: str, default: T) -> T:
+        """Get nested configuration value using dot notation.
+        
+        Args:
+            key: Configuration key (supports dot notation)
+            default: Default value
+            
+        Returns:
+            Configuration value or default
+        """
+        keys = key.split('.')
+        value = self._config
+        
+        try:
+            for k in keys:
+                value = value[k]
+            return value
+        except (KeyError, TypeError):
+            return default

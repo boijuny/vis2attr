@@ -9,6 +9,7 @@ import shutil
 
 from .base import StorageBackend, StorageError
 from ..core.schemas import Attributes, VLMRaw
+from ..core.config import ConfigWrapper
 
 
 class FileStorage(StorageBackend):
@@ -35,9 +36,10 @@ class FileStorage(StorageBackend):
                 - backup_enabled: Whether to create backups (default: False)
         """
         super().__init__(config)
-        self.storage_root = Path(self.config.get('storage_root', './storage'))
-        self.create_dirs = self.config.get('create_dirs', True)
-        self.backup_enabled = self.config.get('backup_enabled', False)
+        config_wrapper = ConfigWrapper(self.config)
+        self.storage_root = Path(config_wrapper.get('storage_root', './storage'))
+        self.create_dirs = config_wrapper.get_bool('create_dirs', True)
+        self.backup_enabled = config_wrapper.get_bool('backup_enabled', False)
         
         if self.create_dirs:
             self.storage_root.mkdir(parents=True, exist_ok=True)

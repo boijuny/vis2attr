@@ -8,6 +8,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 from .base import PromptBuilder
 from ..core.schemas import Item, VLMRequest
 from ..core.constants import DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE
+from ..core.config import ConfigWrapper
 
 
 class JinjaPromptBuilder(PromptBuilder):
@@ -23,7 +24,8 @@ class JinjaPromptBuilder(PromptBuilder):
             config: Configuration containing template_path and other settings
         """
         super().__init__(config)
-        self.template_path = config.get("template_path", "config/prompts")
+        config_wrapper = ConfigWrapper(config)
+        self.template_path = config_wrapper.get("template_path", "config/prompts")
         self._setup_jinja_env()
     
     def _setup_jinja_env(self) -> None:
@@ -60,7 +62,8 @@ class JinjaPromptBuilder(PromptBuilder):
             VLMRequest ready to send to VLM provider
         """
         # Load the template
-        template_name = self.config.get("template_name", "default.jinja")
+        config_wrapper = ConfigWrapper(self.config)
+        template_name = config_wrapper.get("template_name", "default.jinja")
         template = self.jinja_env.get_template(template_name)
         
         # Prepare template context

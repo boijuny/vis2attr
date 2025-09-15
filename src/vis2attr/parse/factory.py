@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Optional, Type
 from .base import Parser, ParseError
 from .json_parser import JSONParser
 from ..core.schemas import VLMRaw
+from ..core.config import ConfigWrapper
 
 
 class ParserFactory:
@@ -22,7 +23,8 @@ class ParserFactory:
     def _register_default_parsers(self) -> None:
         """Register default parsers in order of preference."""
         # JSON parser (only parser for structured output)
-        json_config = self.config.get('json_parser', {})
+        config_wrapper = ConfigWrapper(self.config)
+        json_config = config_wrapper.get('json_parser', {})
         self._parsers.append(JSONParser(json_config))
     
     def register_parser(self, parser: Parser, priority: int = 0) -> None:
@@ -77,7 +79,8 @@ class ParserFactory:
         parser_class = parser_map.get(name.lower())
         if parser_class:
             config_key = f"{name.lower()}_parser"
-            config = self.config.get(config_key, {})
+            config_wrapper = ConfigWrapper(self.config)
+            config = config_wrapper.get(config_key, {})
             return parser_class(config)
         
         return None
