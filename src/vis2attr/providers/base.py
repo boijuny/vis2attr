@@ -1,5 +1,6 @@
 """Base provider interface for VLM providers."""
 
+import os
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 from ..core.schemas import VLMRequest, VLMRaw
@@ -45,6 +46,24 @@ class Provider(ABC):
         """
         self.config = config
         self._validate_config()
+    
+    def get_api_key(self, key_name: str, required: bool = True) -> str:
+        """Get API key from environment variables.
+        
+        Args:
+            key_name: Name of the environment variable containing the API key
+            required: Whether the key is required (raises error if missing)
+            
+        Returns:
+            API key value
+            
+        Raises:
+            ProviderConfigError: If required key is not found
+        """
+        api_key = os.getenv(key_name)
+        if required and not api_key:
+            raise ProviderConfigError(f"Required API key not found: {key_name}")
+        return api_key or ""
     
     @abstractmethod
     def _validate_config(self) -> None:
