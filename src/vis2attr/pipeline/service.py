@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
 
-from ..core.config import Config
+from ..core.config import Config, ConfigWrapper
 from ..core.schemas import Item, VLMRequest, VLMRaw, Attributes, Decision
 from ..core.constants import (
     DEFAULT_MAX_IMAGES_PER_ITEM,
@@ -85,11 +85,13 @@ class PipelineService:
         try:
             if self.config.ingestor == "ingest.fs":
                 io_config = self.config.io
+                io_wrapper = ConfigWrapper(io_config)
+                security_wrapper = ConfigWrapper(self.config.security)
                 self.ingestor = FileSystemIngestor(
-                    supported_formats=io_config.get("supported_formats", [".jpg", ".jpeg", ".png", ".webp"]),
-                    max_images_per_item=io_config.get("max_images_per_item", DEFAULT_MAX_IMAGES_PER_ITEM),
-                    max_resolution=io_config.get("max_resolution", DEFAULT_MAX_RESOLUTION),
-                    strip_exif=self.config.security.get("strip_exif", True)
+                    supported_formats=io_wrapper.get_list("supported_formats", [".jpg", ".jpeg", ".png", ".webp"]),
+                    max_images_per_item=io_wrapper.get_int("max_images_per_item", DEFAULT_MAX_IMAGES_PER_ITEM),
+                    max_resolution=io_wrapper.get_int("max_resolution", DEFAULT_MAX_RESOLUTION),
+                    strip_exif=security_wrapper.get_bool("strip_exif", True)
                 )
             else:
                 raise PipelineError(f"Unsupported ingestor: {self.config.ingestor}")
@@ -175,12 +177,13 @@ class PipelineService:
             provider_config = self.config.get_provider_config(
                 self.config.provider.replace("providers.", "")
             )
+            provider_wrapper = ConfigWrapper(provider_config)
             vlm_request = self.prompt_builder.build_request(
                 item=item,
                 schema=schema,
-                model=provider_config.get("model", "gpt-4-vision-preview"),
-                max_tokens=provider_config.get("max_tokens", DEFAULT_MAX_TOKENS),
-                temperature=provider_config.get("temperature", DEFAULT_TEMPERATURE)
+                model=provider_wrapper.get("model", "gpt-4-vision-preview"),
+                max_tokens=provider_wrapper.get_int("max_tokens", DEFAULT_MAX_TOKENS),
+                temperature=provider_wrapper.get("temperature", DEFAULT_TEMPERATURE)
             )
             self.logger.debug(f"Built VLM request for model: {vlm_request.model}")
             
